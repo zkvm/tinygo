@@ -2,11 +2,17 @@ language: go
 
 matrix:
   include:
-  - dist: xenial
+  #- dist: xenial
+  #  go: "1.11"
+  #- os: osx
+  #  go: "1.11"
+  #  env: PATH="/usr/local/opt/llvm/bin:$PATH"
+  - os: windows
     go: "1.11"
-  - os: osx
-    go: "1.11"
-    env: PATH="/usr/local/opt/llvm/bin:$PATH"
+    env: GOBIN="$GOPATH/bin"
+    #env: GOBIN="/usr/local/opt/llvm/bin:$PATH"
+    before_install:
+    - choco upgrade llvm -y
 
 addons:
   apt:
@@ -36,11 +42,23 @@ addons:
     - arm-none-eabi-gcc
 
 install:
+  - ls -l "/c/Program Files/LLVM"
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then mkdir -p /Users/travis/gopath/bin; fi
+  - if [ "$TRAVIS_OS_NAME" == "windows" ]; then mkdir -p "$GOBIN"; echo $GOBIN; fi
   - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
   - dep ensure --vendor-only
 
 script:
+  - ls -l "/c/Program Files/LLVM"
+  - ls -l "/c/Program Files/LLVM/bin"
+  - ls -l "/c/Program Files/LLVM/include"
+  - ls -l "/c/Program Files/LLVM/include/clang-c"
+  - ls -l "/c/Program Files/LLVM/lib"
+  - ls -l "/c/Program Files/LLVM/lib/clang"
+  - ls -l "/c/Program Files/LLVM/lib/clang/7.0.0"
+  - ls -l "/c/Program Files/LLVM/lib/clang/7.0.0/lib"
+  - ls -l "/c/Program Files/LLVM/lib/clang/7.0.0/lib/windows"
+  - find "/c/Program Files/LLVM" -name Analysis.h
   - go install github.com/tinygo-org/tinygo
   - go test -v .
   - make gen-device

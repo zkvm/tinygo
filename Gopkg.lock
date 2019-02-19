@@ -14,12 +14,12 @@
   revision = "3744606dbb67b99c60d3f11cb10bd3f9e6dad472"
 
 [[projects]]
-  branch = "master"
-  digest = "1:a6a25fd8906c74978f1ed811bc9fd3422da8093be863b458874b02a782b6ae3e"
+  branch = "windows"
+  digest = "1:c19a3c451019117f94858167333b72414be67c2f0ac33ec1c0e94c6b04eac37e"
   name = "tinygo.org/x/go-llvm"
   packages = ["."]
   pruneopts = "UT"
-  revision = "d5f730401f5069618b275a5241c6417eb0c38a65"
+  revision = "71fd6b43e9b147fd4cd0406376842ea5a25b775d"
 
 [solve-meta]
   analyzer-name = "dep"
