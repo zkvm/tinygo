@@ -1,0 +1,53 @@
+jobs:
+- job: Build
+  timeoutInMinutes: 180
+  pool:
+    vmImage: 'VS2017-Win2016'
+  steps:
+    - checkout: self
+      submodules: false
+    - task: CacheBeta@0
+      displayName: Cache LLVM source
+      inputs:
+        key: llvm-source-8-windows-v0
+        path: llvm-project
+    - task: Bash@3
+      displayName: Download LLVM source
+      inputs:
+        targetType: inline
+        script: make llvm-source
+    - task: CacheBeta@0
+      displayName: Cache LLVM build
+      inputs:
+        key: llvm-build-8-windows-v1
+        path: llvm-build
+    - task: Bash@3
+      displayName: Build LLVM
+      inputs:
+        targetType: inline
+        script: |
+          if [ ! -f llvm-build/lib/liblldELF.a ]
+          then
+            choco install ninja
+            make llvm-build
+          fi
+    #- task: Bash@3
+    #  displayName: Install python3
+    #  inputs:
+    #    targetType: inline
+    #    script: choco install python3 --version 3.7.4
+    - task: Bash@3
+      inputs:
+        targetType: inline
+        script: |
+          gcc --version
+          grep -r clang_getTypedefDeclUnderlyingType llvm-build
+          make
+          #make release
+    - task: Bash@3
+      inputs:
+        targetType: inline
+        script: |
+          ./build/tinygo.exe version
+    #- publish: $(System.DefaultWorkingDirectory)/build/release.tar.gz
+    #  artifact: tinygo.windows-amd64.tar.gz

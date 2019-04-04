@@ -1,33 +1,67 @@
 
 # aliases
 all: tinygo
-tinygo: build/tinygo
+tinygo: build/tinygo.exe
 
 # Default build and source directories, as created by `make llvm-build`.
 LLVM_BUILDDIR ?= llvm-build
 CLANG_SRC ?= llvm-project/clang
 LLD_SRC ?= llvm-project/lld
 
-.PHONY: all tinygo build/tinygo test $(LLVM_BUILDDIR) llvm-source clean fmt gen-device gen-device-nrf gen-device-avr
+.PHONY: all tinygo build/tinygo.exe test $(LLVM_BUILDDIR) llvm-source clean fmt gen-device gen-device-nrf gen-device-avr
 
 LLVM_COMPONENTS = all-targets analysis asmparser asmprinter bitreader bitwriter codegen core coroutines debuginfodwarf executionengine instrumentation interpreter ipo irreader linker lto mc mcjit objcarcopts option profiledata scalaropts support target
 
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Linux)
+LLVM_CMAKE_FLAGS += -DLLVM_TARGETS_TO_BUILD="X86;ARM;AArch64;WebAssembly" -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD="AVR;RISCV" -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_ASSERTIONS=OFF -DLIBCLANG_BUILD_STATIC=ON -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_ZLIB=OFF -DLLVM_ENABLE_PROJECTS="clang;lld" -DLLVM_TOOL_CLANG_TOOLS_EXTRA_BUILD=OFF
+
+ifeq ($(OS),Windows_NT)
+    # LLVM compiled using MinGW on Windows appears to have problems with threads.
+    # Without this flag, linking results in errors like these:
+    #     libLLVMSupport.a(Threading.cpp.obj):Threading.cpp:(.text+0x55): undefined reference to `std::thread::hardware_concurrency()'
+    LLVM_CMAKE_FLAGS += -DLLVM_ENABLE_THREADS=OFF
+    # note: the following might work?
+    LIBCLANG_PATH = $(abspath $(LLVM_BUILDDIR))/lib/liblibclang.dll.a
+    #LIBCLANG_PATH = \
+    #    $(abspath $(LLVM_BUILDDIR))/tools/clang/tools/libclang/CMakeFiles/libclang.dir/ARCMigrate.cpp.obj \
+    #    $(abspath $(LLVM_BUILDDIR))/tools/clang/tools/libclang/CMakeFiles/libclang.dir/BuildSystem.cpp.obj \
+    #    $(abspath $(LLVM_BUILDDIR))/tools/clang/tools/libclang/CMakeFiles/libclang.dir/CIndex.cpp.obj \
+    #    $(abspath $(LLVM_BUILDDIR))/tools/clang/tools/libclang/CMakeFiles/libclang.dir/CIndexCodeCompletion.cpp.obj \
+    #    $(abspath $(LLVM_BUILDDIR))/tools/clang/tools/libclang/CMakeFiles/libclang.dir/CIndexCXX.cpp.obj \
+    #    $(abspath $(LLVM_BUILDDIR))/tools/clang/tools/libclang/CMakeFiles/libclang.dir/CIndexDiagnostic.cpp.obj \
+    #    $(abspath $(LLVM_BUILDDIR))/tools/clang/tools/libclang/CMakeFiles/libclang.dir/CIndexer.cpp.obj \
+    #    $(abspath $(LLVM_BUILDDIR))/tools/clang/tools/libclang/CMakeFiles/libclang.dir/CIndexHigh.cpp.obj \
+    #    $(abspath $(LLVM_BUILDDIR))/tools/clang/tools/libclang/CMakeFiles/libclang.dir/CIndexInclusionStack.cpp.obj \
+    #    $(abspath $(LLVM_BUILDDIR))/tools/clang/tools/libclang/CMakeFiles/libclang.dir/CIndexUSRs.cpp.obj \
+    #    $(abspath $(LLVM_BUILDDIR))/tools/clang/tools/libclang/CMakeFiles/libclang.dir/CXCompilationDatabase.cpp.obj \
+    #    $(abspath $(LLVM_BUILDDIR))/tools/clang/tools/libclang/CMakeFiles/libclang.dir/CXCursor.cpp.obj \
+    #    $(abspath $(LLVM_BUILDDIR))/tools/clang/tools/libclang/CMakeFiles/libclang.dir/CXIndexDataConsumer.cpp.obj \
+    #    $(abspath $(LLVM_BUILDDIR))/tools/clang/tools/libclang/CMakeFiles/libclang.dir/CXLoadedDiagnostic.cpp.obj \
+    #    $(abspath $(LLVM_BUILDDIR))/tools/clang/tools/libclang/CMakeFiles/libclang.dir/CXSourceLocation.cpp.obj \
+    #    $(abspath $(LLVM_BUILDDIR))/tools/clang/tools/libclang/CMakeFiles/libclang.dir/CXStoredDiagnostic.cpp.obj \
+    #    $(abspath $(LLVM_BUILDDIR))/tools/clang/tools/libclang/CMakeFiles/libclang.dir/CXString.cpp.obj \
+    #    $(abspath $(LLVM_BUILDDIR))/tools/clang/tools/libclang/CMakeFiles/libclang.dir/CXType.cpp.obj \
+    #    $(abspath $(LLVM_BUILDDIR))/tools/clang/tools/libclang/CMakeFiles/libclang.dir/Indexing.cpp.obj
     START_GROUP = -Wl,--start-group
     END_GROUP = -Wl,--end-group
+else
+    LIBCLANG_PATH = $(abspath $(LLVM_BUILDDIR))/lib/libclang.a
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Linux)
+        START_GROUP = -Wl,--start-group
+        END_GROUP = -Wl,--end-group
+    endif
 endif
 
-CLANG_LIBS = $(START_GROUP) $(abspath $(LLVM_BUILDDIR))/lib/libclang.a -lclangAnalysis -lclangARCMigrate -lclangAST -lclangASTMatchers -lclangBasic -lclangCodeGen -lclangCrossTU -lclangDriver -lclangDynamicASTMatchers -lclangEdit -lclangFormat -lclangFrontend -lclangFrontendTool -lclangHandleCXX -lclangHandleLLVM -lclangIndex -lclangLex -lclangParse -lclangRewrite -lclangRewriteFrontend -lclangSema -lclangSerialization -lclangStaticAnalyzerCheckers -lclangStaticAnalyzerCore -lclangStaticAnalyzerFrontend -lclangTooling -lclangToolingASTDiff -lclangToolingCore -lclangToolingInclusions $(END_GROUP) -lstdc++
+CLANG_LIBS = $(LIBCLANG_PATH) $(START_GROUP) -lclangAnalysis -lclangARCMigrate -lclangAST -lclangASTMatchers -lclangBasic -lclangCodeGen -lclangCrossTU -lclangDriver -lclangDynamicASTMatchers -lclangEdit -lclangFormat -lclangFrontend -lclangFrontendTool -lclangHandleCXX -lclangHandleLLVM -lclangIndex -lclangLex -lclangParse -lclangRewrite -lclangRewriteFrontend -lclangSema -lclangSerialization -lclangStaticAnalyzerCheckers -lclangStaticAnalyzerCore -lclangStaticAnalyzerFrontend -lclangTooling -lclangToolingASTDiff -lclangToolingCore -lclangToolingInclusions $(END_GROUP) -lstdc++
 
 LLD_LIBS = $(START_GROUP) -llldCOFF -llldCommon -llldCore -llldDriver -llldELF -llldMachO -llldMinGW -llldReaderWriter -llldWasm -llldYAML $(END_GROUP)
 
 
 # For static linking.
-ifneq ("$(wildcard $(LLVM_BUILDDIR)/bin/llvm-config)","")
+ifneq ("$(wildcard $(LLVM_BUILDDIR)/bin/llvm-config*)","")
     CGO_CPPFLAGS=$(shell $(LLVM_BUILDDIR)/bin/llvm-config --cppflags) -I$(abspath $(CLANG_SRC))/include -I$(abspath $(LLD_SRC))/include
     CGO_CXXFLAGS=-std=c++11
-    CGO_LDFLAGS=-L$(LLVM_BUILDDIR)/lib $(CLANG_LIBS) $(LLD_LIBS) $(shell $(LLVM_BUILDDIR)/bin/llvm-config --ldflags --libs --system-libs $(LLVM_COMPONENTS))
+    CGO_LDFLAGS=-L$(abspath $(LLVM_BUILDDIR)/lib) $(CLANG_LIBS) $(LLD_LIBS) $(shell $(LLVM_BUILDDIR)/bin/llvm-config --ldflags --libs --system-libs $(LLVM_COMPONENTS)) -static-libgcc -static-libstdc++ -static -lversion #-Wl,--whole-archive -lpthread -Wl,--no-whole-archive -std=c++11
 endif
 
 
@@ -73,7 +107,7 @@ llvm-source: llvm-project/README.md
 # Configure LLVM.
 TINYGO_SOURCE_DIR=$(shell pwd)
 $(LLVM_BUILDDIR)/build.ninja: llvm-source
-	mkdir -p $(LLVM_BUILDDIR); cd $(LLVM_BUILDDIR); cmake -G Ninja $(TINYGO_SOURCE_DIR)/llvm-project/llvm "-DLLVM_TARGETS_TO_BUILD=X86;ARM;AArch64;WebAssembly" "-DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=AVR;RISCV" -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_ASSERTIONS=OFF -DLIBCLANG_BUILD_STATIC=ON -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_ZLIB=OFF -DLLVM_ENABLE_PROJECTS="clang;lld" -DLLVM_TOOL_CLANG_TOOLS_EXTRA_BUILD=OFF
+	mkdir -p $(LLVM_BUILDDIR); cd $(LLVM_BUILDDIR); cmake -G Ninja $(TINYGO_SOURCE_DIR)/llvm-project/llvm $(LLVM_CMAKE_FLAGS)
 
 # Build LLVM.
 $(LLVM_BUILDDIR): $(LLVM_BUILDDIR)/build.ninja
@@ -81,9 +115,9 @@ $(LLVM_BUILDDIR): $(LLVM_BUILDDIR)/build.ninja
 
 
 # Build the Go compiler.
-build/tinygo:
+build/tinygo.exe:
 	@if [ ! -f "$(LLVM_BUILDDIR)/bin/llvm-config" ]; then echo "Fetch and build LLVM first by running:"; echo "  make llvm-source"; echo "  make $(LLVM_BUILDDIR)"; exit 1; fi
-	CGO_CPPFLAGS="$(CGO_CPPFLAGS)" CGO_CXXFLAGS="$(CGO_CXXFLAGS)" CGO_LDFLAGS="$(CGO_LDFLAGS)" go build -o build/tinygo -tags byollvm .
+	CGO_CPPFLAGS="$(CGO_CPPFLAGS)" CGO_CXXFLAGS="$(CGO_CXXFLAGS)" CGO_LDFLAGS="$(CGO_LDFLAGS)" go build -o build/tinygo.exe -tags byollvm .
 
 test:
 	CGO_CPPFLAGS="$(CGO_CPPFLAGS)" CGO_CXXFLAGS="$(CGO_CXXFLAGS)" CGO_LDFLAGS="$(CGO_LDFLAGS)" go test -v -tags byollvm .
@@ -135,7 +169,7 @@ endif
 	tinygo build             -o wasm.wasm -target=wasm               examples/wasm/export
 	tinygo build             -o wasm.wasm -target=wasm               examples/wasm/main
 
-release: build/tinygo gen-device
+release: build/tinygo.exe gen-device
 	@mkdir -p build/release/tinygo/bin
 	@mkdir -p build/release/tinygo/lib/clang/include
 	@mkdir -p build/release/tinygo/lib/CMSIS/CMSIS
@@ -145,7 +179,7 @@ release: build/tinygo gen-device
 	@mkdir -p build/release/tinygo/pkg/armv7m-none-eabi
 	@mkdir -p build/release/tinygo/pkg/armv7em-none-eabi
 	@echo copying source files
-	@cp -p  build/tinygo                 build/release/tinygo/bin
+	@cp -p  build/tinygo.exe             build/release/tinygo/bin
 	@cp -p $(abspath $(CLANG_SRC))/lib/Headers/*.h build/release/tinygo/lib/clang/include
 	@cp -rp lib/CMSIS/CMSIS/Include      build/release/tinygo/lib/CMSIS/CMSIS
 	@cp -rp lib/CMSIS/README.md          build/release/tinygo/lib/CMSIS
@@ -155,7 +189,10 @@ release: build/tinygo gen-device
 	@cp -rp lib/nrfx/*                   build/release/tinygo/lib/nrfx
 	@cp -rp src                          build/release/tinygo/src
 	@cp -rp targets                      build/release/tinygo/targets
-	./build/tinygo build-builtins -target=armv6m-none-eabi  -o build/release/tinygo/pkg/armv6m-none-eabi/compiler-rt.a
-	./build/tinygo build-builtins -target=armv7m-none-eabi  -o build/release/tinygo/pkg/armv7m-none-eabi/compiler-rt.a
-	./build/tinygo build-builtins -target=armv7em-none-eabi -o build/release/tinygo/pkg/armv7em-none-eabi/compiler-rt.a
+	ls -l ./build
+	file ./build/tinygo.exe
+	./build/tinygo.exe version
+	./build/tinygo.exe build-builtins -target=armv6m-none-eabi  -o build/release/tinygo/pkg/armv6m-none-eabi/compiler-rt.a
+	./build/tinygo.exe build-builtins -target=armv7m-none-eabi  -o build/release/tinygo/pkg/armv7m-none-eabi/compiler-rt.a
+	./build/tinygo.exe build-builtins -target=armv7em-none-eabi -o build/release/tinygo/pkg/armv7em-none-eabi/compiler-rt.a
 	tar -czf build/release.tar.gz -C build/release tinygo

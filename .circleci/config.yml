@@ -250,7 +250,7 @@ jobs:
 workflows:
   test-all:
     jobs:
-      - test-llvm8-go111
-      - test-llvm8-go112
-      - build-linux
-      - build-macos
+      #- test-llvm8-go111
+      #- test-llvm8-go112
+      #- build-linux
+      #- build-macos
