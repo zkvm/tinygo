@@ -45,11 +45,13 @@ func TestCompiler(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpdir)
 
-	t.Log("running tests on host...")
-	for _, path := range matches {
-		t.Run(path, func(t *testing.T) {
-			runTest(path, tmpdir, "", t)
-		})
+	if runtime.GOOS != "windows" {
+		t.Log("running tests on host...")
+		for _, path := range matches {
+			t.Run(path, func(t *testing.T) {
+				runTest(path, tmpdir, "", t)
+			})
+		}
 	}
 
 	if testing.Short() {
@@ -83,7 +85,9 @@ func TestCompiler(t *testing.T) {
 				runTest(path, tmpdir, "aarch64--linux-gnu", t)
 			})
 		}
+	}
 
+	if runtime.GOOS == "linux" {
 		t.Log("running tests for WebAssembly...")
 		for _, path := range matches {
 			if path == filepath.Join("testdata", "gc.go") {

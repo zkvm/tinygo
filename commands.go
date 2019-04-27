@@ -10,7 +10,7 @@ import (
 // Commands used by the compilation process might have different file names
 // across operating systems and distributions.
 var commands = map[string][]string{
-	"clang":   {"clang-8"},
+	"clang":   {"clang-8", "clang"},
 	"ld.lld":  {"ld.lld-8", "ld.lld"},
 	"wasm-ld": {"wasm-ld-8", "wasm-ld"},
 }

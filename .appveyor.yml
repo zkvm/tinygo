@@ -1,0 +1,74 @@
+image: Visual Studio 2015
+cache:
+  - llvm
+  - llvm-build
+  - '%LocalAppData%\go-build'
+    #- C:\gopath\src\github.com\tinygo-org\tinygo\llvm
+    #- C:\gopath\src\github.com\tinygo-org\tinygo\llvm-build
+    #- C:\gopath\pkg\dep\sources
+#clone_folder: C:\gopath\src\github.com\tinygo-org\tinygo
+environment:
+  CC: gcc.exe
+  GOPATH: C:\gopath
+  GETH_ARCH: amd64
+  MSYS2_ARCH: x86_64
+  MSYS2_BITS: 64
+  MSYSTEM: MINGW64
+  PATH: C:\msys64\mingw64\bin\;C:\Program Files\qemu;C:\gopath\bin;%PATH%
+  APPVEYOR_CACHE_ENTRY_ZIP_ARGS: -t7z -m0=lzma -mx=9
+
+install:
+    #- du -hsc llvm
+    #- du -hsc llvm-build
+  - gcc --version
+  - dir C:\msys64\mingw64\bin
+  - file llvm-build/lib/liblibclang.dll.a
+  - mingw32-make --version
+  - mingw32-make llvm-source
+  - which ldd
+  - set CC=gcc
+  - set CXX=g++
+  - set CMAKE_MAKE_PROGRAM=mingw32-make
+  - dir llvm-build
+  - dir llvm-build\bin
+  - dir llvm-build\lib
+  - dir llvm-build\tools\clang\tools\libclang\CMakeFiles\libclang.dir
+  - uname -a
+  - uname -s
+  - dir "C:\Program Files\LLVM\bin"
+    #- choco install qemu
+  - if not exist llvm-build\bin\wasm-ld.exe (
+      choco install ninja &&
+      mingw32-make llvm-build
+    )
+    #  - mkdir -p C:\gopath\bin
+    #  - go get -v github.com/golang/dep
+    #  - go install -v github.com/golang/dep
+    #  - go build -o C:\gopath\bin\dep github.com/golang/dep
+    #  - go env
+    #  - dir C:\gopath
+    #  - dir C:\gopath\bin
+  - echo %PATH%
+    #- C:\gopath\bin\dep ensure -vendor-only -v
+    #- appveyor DownloadFile https://bin.equinox.io/a/59wHzG494MG/github-com-golang-dep-cmd-dep-windows-amd64.zip
+    #- git submodule update --init
+build_script:
+  - echo hello
+    #- set "CGO_CPPFLAGS=-IC:/projects/tinygo/llvm/include -IC:/projects/tinygo/llvm-build/include -D_FILE_OFFSET_BITS=64 -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -IC:/projects/tinygo/llvm/tools/clang/include -IC:/projects/tinygo/llvm/tools/lld/include"
+    #- set "CGO_CXXFLAGS=-std=c++11"
+    #- set "CGO_LDFLAGS=-static -LC:/projects/tinygo/llvm-build/lib -Wl,--start-group -lclangAnalysis -lclangARCMigrate -lclangAST -lclangASTMatchers -lclangBasic -lclangCodeGen -lclangCrossTU -lclangDriver -lclangDynamicASTMatchers -lclangEdit -lclangFormat -lclangFrontend -lclangFrontendTool -lclangHandleCXX -lclangHandleLLVM -lclangIndex -lclangLex -lclangParse -lclangRewrite -lclangRewriteFrontend -lclangSema -lclangSerialization -lclangStaticAnalyzerCheckers -lclangStaticAnalyzerCore -lclangStaticAnalyzerFrontend -lclangTooling -lclangToolingASTDiff -lclangToolingCore -lclangToolingInclusions -lclangToolingRefactor -Wl,--end-group -lstdc++ -Wl,--start-group -llldCOFF -llldCommon -llldCore -llldDriver -llldELF -llldMachO -llldMinGW -llldReaderWriter -llldWasm -llldYAML -Wl,--end-group -LC:/projects/tinygo/llvm-build/lib  -lLLVMOption -lLLVMMCJIT -lLLVMLTO -lLLVMPasses -lLLVMObjCARCOpts -lLLVMInterpreter -lLLVMExecutionEngine -lLLVMRuntimeDyld -lLLVMDebugInfoDWARF -lLLVMCoroutines -lLLVMipo -lLLVMInstrumentation -lLLVMVectorize -lLLVMLinker -lLLVMIRReader -lLLVMAsmParser -lLLVMAVRDisassembler -lLLVMAVRCodeGen -lLLVMAVRAsmParser -lLLVMAVRDesc -lLLVMAVRInfo -lLLVMAVRAsmPrinter -lLLVMWebAssemblyDisassembler -lLLVMWebAssemblyCodeGen -lLLVMWebAssemblyDesc -lLLVMWebAssemblyAsmPrinter -lLLVMWebAssemblyAsmParser -lLLVMWebAssemblyInfo -lLLVMAArch64Disassembler -lLLVMAArch64CodeGen -lLLVMAArch64AsmParser -lLLVMAArch64Desc -lLLVMAArch64Info -lLLVMAArch64AsmPrinter -lLLVMAArch64Utils -lLLVMARMDisassembler -lLLVMARMCodeGen -lLLVMARMAsmParser -lLLVMARMDesc -lLLVMARMInfo -lLLVMARMAsmPrinter -lLLVMARMUtils -lLLVMX86Disassembler -lLLVMX86AsmParser -lLLVMX86CodeGen -lLLVMGlobalISel -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMCodeGen -lLLVMTarget -lLLVMScalarOpts -lLLVMInstCombine -lLLVMAggressiveInstCombine -lLLVMTransformUtils -lLLVMBitWriter -lLLVMAnalysis -lLLVMProfileData -lLLVMX86Desc -lLLVMObject -lLLVMMCParser -lLLVMBitReader -lLLVMCore -lLLVMMCDisassembler -lLLVMX86Info -lLLVMX86AsmPrinter -lLLVMMC -lLLVMDebugInfoCodeView -lLLVMDebugInfoMSF -lLLVMBinaryFormat -lLLVMX86Utils -lLLVMSupport -lLLVMDemangle -lz -lpsapi -lshell32 -lole32 -luuid -ladvapi32"
+  - grep -r clang_Type_getNamedType llvm-build
+  - grep -r GetFileVersionInfoSizeW llvm-build
+  - grep -r hardware_concurrency llvm-build
+  - mingw32-make
+  - ldd build/tinygo
+  - foobar
+  - mingw32-make release
+test_script:
+  - echo TODO
+    #- mingw32-make test
+    #- go test -timeout 30s -v -tags byollvm .
+  - echo finish
+artifacts:
+  - path: build/release.tar.gz
+    name: release.tar.gz
