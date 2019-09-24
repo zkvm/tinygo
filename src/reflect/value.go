@@ -640,6 +640,9 @@ func (v Value) checkAddressable() {
 	}
 }
 
+//go:linkname alloc runtime.alloc
+func alloc(size uintptr) unsafe.Pointer
+
 func MakeSlice(typ Type, len, cap int) Value {
 	panic("unimplemented: reflect.MakeSlice()")
 }
@@ -649,7 +652,9 @@ func Zero(typ Type) Value {
 }
 
 func New(typ Type) Value {
-	panic("unimplemented: reflect.New()")
+	data := alloc(typ.Size())
+	val := Value{PtrTo(typ), data, 0}
+	return val
 }
 
 type funcHeader struct {

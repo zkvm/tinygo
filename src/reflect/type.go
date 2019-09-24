@@ -58,6 +58,10 @@ const (
 	Struct
 )
 
+func PtrTo(t Type) Type {
+	return (t << 5) + Type((Ptr-19)<<1) + 1
+}
+
 func (k Kind) String() string {
 	switch k {
 	case Bool:
